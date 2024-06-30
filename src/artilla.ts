@@ -17,12 +17,24 @@ export class Client {
     const endpoint = new URL(this.endpoint);
     endpoint.pathname = `/api/task/${taskId}/proposal`;
 
-    return fetch(endpoint, {
+    const result = await fetch(endpoint, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${this.apiKey}`,
       },
       body: JSON.stringify(proposal),
     });
+    return result.json();
+  }
+
+  async getProposal(proposalId: string) {
+    const endpoint = new URL(this.endpoint);
+    endpoint.pathname = `/api/proposal/${proposalId}`;
+    const result = await fetch(endpoint, {
+      headers: {
+        Authorization: `Bearer ${this.apiKey}`,
+      },
+    });
+    return result.json();
   }
 }

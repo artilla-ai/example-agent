@@ -10,6 +10,8 @@ import {
 import { generateLogo } from "./agent/designLogo/generateLogo";
 import { SubmissionSubmitFilesBody } from "./artilla/client";
 import { downloadFileAndUploadToS3 } from "./utils/uploadToS3";
+import PQueue from "p-queue";
+import pRetry, { AbortError } from "p-retry";
 
 /**
  * Job processing queue - processes logo design jobs
@@ -60,31 +62,39 @@ const logoDesign: Handler<SQSEvent, string> = async (event, context, cb) => {
     targetAudience: taskData.forWho,
   });
 
+  const queue = new PQueue({ concurrency: 4, autoStart: false });
+
   const submissionFiles: SubmissionSubmitFilesBody["files"] = [];
+
   for (const i in designStrategy.ideas) {
-    const logoIdx = parseInt(i) + 1;
-    console.log(`Implementing idea #${logoIdx}...`);
-    const idea = designStrategy.ideas[i];
-
-    const logoUrl = await generateLogo(idea as LogoIdea);
-    const bucketKey = `logos/task-${taskId}/proposal-${proposalId}/revision-${submission.revision}/logo-${logoIdx}.png`;
-    const { contentType } = await downloadFileAndUploadToS3(
-      logoUrl,
-      Bucket.LogoSageFiles.bucketName,
-      bucketKey
-    );
-
-    const submissionFileUrl = new URL("https://" + Config.DISTRIBUTION_URL);
-    submissionFileUrl.pathname = bucketKey;
-
-    submissionFiles.push({
-      key: `logo-${logoIdx}.png`,
-      url: submissionFileUrl.toString(),
-      contentType,
-      description: idea.justification,
-    });
-    console.log(`Logo uploaded to URL: ${submissionFileUrl.toString()}`);
+    const doDesign = async () => {
+      const logoIdx = parseInt(i) + 1;
+      console.log(`Implementing idea #${logoIdx}...`);
+      const idea = designStrategy.ideas[i];
+      const submissionFile = await pRetry(
+        () =>
+          designAndUploadLogo(
+            idea as LogoIdea,
+            logoIdx,
+            taskId,
+            proposalId,
+            submission
+          ),
+        {
+          retries: 3,
+          onFailedAttempt: (error) => {
+            console.error(error);
+            console.error(idea);
+          },
+        }
+      );
+      submissionFiles.push(submissionFile);
+    };
+    queue.add(doDesign);
   }
+
+  await queue.start();
+  await queue.onIdle();
 
   const message = designStrategy.designApproach;
 
@@ -101,3 +111,31 @@ const logoDesign: Handler<SQSEvent, string> = async (event, context, cb) => {
 
   return "Done";
 };
+
+async function designAndUploadLogo(
+  idea: LogoIdea,
+  logoIdx: number,
+  taskId: string,
+  proposalId: string,
+  submission: any
+) {
+  const logoUrl = await generateLogo(idea);
+  const bucketKey = `logos/task-${taskId}/proposal-${proposalId}/revision-${submission.revision}/logo-${logoIdx}.png`;
+  const { contentType } = await downloadFileAndUploadToS3(
+    logoUrl,
+    Bucket.LogoSageFiles.bucketName,
+    bucketKey
+  );
+
+  const submissionFileUrl = new URL("https://" + Config.DISTRIBUTION_URL);
+  submissionFileUrl.pathname = bucketKey;
+
+  const submissionFile = {
+    key: `logo-${logoIdx}.png`,
+    url: submissionFileUrl.toString(),
+    contentType,
+    description: idea.justification,
+  };
+  console.log(`Logo uploaded to URL: ${submissionFileUrl.toString()}`);
+  return submissionFile;
+}

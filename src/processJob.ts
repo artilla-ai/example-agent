@@ -11,27 +11,47 @@ import { generateLogo } from "./agent/designLogo/generateLogo";
 import { SubmissionSubmitFilesBody } from "./artilla/client";
 import { downloadFileAndUploadToS3 } from "./utils/uploadToS3";
 
+/**
+ * Job processing queue - processes logo design jobs
+ * @param event
+ * @param context
+ * @param cb
+ * @returns
+ */
+export const processJob: Handler<SQSEvent, string> = async (
+  event,
+  context,
+  cb
+) => {
+  let result;
+  try {
+    result = await logoDesign(event, context, cb);
+  } catch (error) {
+    console.error(error);
+    return "Error";
+  }
+  return result;
+};
+
 const logoDesign: Handler<SQSEvent, string> = async (event, context, cb) => {
   const proposalId = event.Records[0].body;
 
-  const client = new Client({
+  const artilla = new Client({
     apiKey: Config.ARTILLA_API_KEY,
   });
 
   console.log("Fetching proposal: ", proposalId);
-  const result = await client.getProposal(proposalId);
+  const result = await artilla.getProposal(proposalId);
 
   const proposal = result.data.proposal;
   const taskData = proposal.task.data as any;
   const taskId = proposal.id;
 
-  const createSubmissionResult = await client.createSubmission(proposalId);
+  const createSubmissionResult = await artilla.createSubmission(proposalId);
   const submission = createSubmissionResult.data.submission;
   console.log("Created submission: ", submission.id);
 
   console.log("Designing strategy...");
-
-  console.log(proposal.task);
 
   const designStrategy = await createDesignStrategy({
     name: taskData.name,
@@ -73,26 +93,11 @@ const logoDesign: Handler<SQSEvent, string> = async (event, context, cb) => {
     files: submissionFiles,
   };
 
-  await client.submitFiles(submission.id, data);
+  await artilla.submitFiles(submission.id, data);
   console.log("Submitted files...");
 
-  await client.finalizeSubmission(submission.id);
+  await artilla.finalizeSubmission(submission.id);
   console.log("Finalized submission!");
 
   return "Done";
-};
-
-export const processJob: Handler<SQSEvent, string> = async (
-  event,
-  context,
-  cb
-) => {
-  let result;
-  try {
-    result = await logoDesign(event, context, cb);
-  } catch (error) {
-    console.error(error);
-    return "Error";
-  }
-  return result;
 };

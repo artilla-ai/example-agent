@@ -1,32 +1,38 @@
 import { Handler, SQSEvent } from "aws-lambda";
-import { Client } from "./artilla";
-import { Config } from "sst/node/config";
-import { createDesignStrategy } from "./agent/designLogo/designStrategy";
-import { generateLogo } from "./agent/designLogo/generateLogo";
-import { downloadFileAndUploadToS3 } from "./utils/uploadToS3";
 import { Bucket } from "sst/node/bucket";
+import { Config } from "sst/node/config";
+import { Client } from "./artilla";
 
-interface SubmissionFile {
-  url: string;
-  contentType: string;
-  description: string;
-}
+import {
+  LogoIdea,
+  createDesignStrategy,
+} from "./agent/designLogo/designStrategy";
+import { generateLogo } from "./agent/designLogo/generateLogo";
+import { SubmissionSubmitFilesBody } from "./artilla/client";
+import { downloadFileAndUploadToS3 } from "./utils/uploadToS3";
 
-export const processJob: Handler<SQSEvent, string> = async (event, context) => {
-  // Fetch the proposal and task
-
+const logoDesign: Handler<SQSEvent, string> = async (event, context, cb) => {
   const proposalId = event.Records[0].body;
+
   const client = new Client({
     apiKey: Config.ARTILLA_API_KEY,
-    endpoint: Config.ARTILLA_API_URL,
   });
 
   console.log("Fetching proposal: ", proposalId);
-  const result = (await client.getProposal(proposalId)) as any;
-  const taskData = result.proposal.task.data.request;
-  const taskId = result.proposal.task.id;
+  const result = await client.getProposal(proposalId);
+
+  const proposal = result.data.proposal;
+  const taskData = proposal.task.data as any;
+  const taskId = proposal.id;
+
+  const createSubmissionResult = await client.createSubmission(proposalId);
+  const submission = createSubmissionResult.data.submission;
+  console.log("Created submission: ", submission.id);
 
   console.log("Designing strategy...");
+
+  console.log(proposal.task);
+
   const designStrategy = await createDesignStrategy({
     name: taskData.name,
     fullDescription: taskData.description,
@@ -34,15 +40,14 @@ export const processJob: Handler<SQSEvent, string> = async (event, context) => {
     targetAudience: taskData.forWho,
   });
 
-  const submissionFiles: SubmissionFile[] = [];
+  const submissionFiles: SubmissionSubmitFilesBody["files"] = [];
   for (const i in designStrategy.ideas) {
-    console.log(`Implementing idea #${i + 1}...`);
+    const logoIdx = parseInt(i) + 1;
+    console.log(`Implementing idea #${logoIdx}...`);
     const idea = designStrategy.ideas[i];
 
-    const logoUrl = await generateLogo(idea);
-    const bucketKey = `logos/task-${taskId}/proposal-${proposalId}/logo-${
-      i + 1
-    }.png`;
+    const logoUrl = await generateLogo(idea as LogoIdea);
+    const bucketKey = `logos/task-${taskId}/proposal-${proposalId}/revision-${submission.revision}/logo-${logoIdx}.png`;
     const { contentType } = await downloadFileAndUploadToS3(
       logoUrl,
       Bucket.LogoSageFiles.bucketName,
@@ -53,6 +58,7 @@ export const processJob: Handler<SQSEvent, string> = async (event, context) => {
     submissionFileUrl.pathname = bucketKey;
 
     submissionFiles.push({
+      key: `logo-${logoIdx}.png`,
       url: submissionFileUrl.toString(),
       contentType,
       description: idea.justification,
@@ -60,8 +66,33 @@ export const processJob: Handler<SQSEvent, string> = async (event, context) => {
     console.log(`Logo uploaded to URL: ${submissionFileUrl.toString()}`);
   }
 
-  console.log("Submission: ");
-  console.log(submissionFiles);
+  const message = designStrategy.designApproach;
+
+  const data = {
+    message,
+    files: submissionFiles,
+  };
+
+  await client.submitFiles(submission.id, data);
+  console.log("Submitted files...");
+
+  await client.finalizeSubmission(submission.id);
+  console.log("Finalized submission!");
 
   return "Done";
+};
+
+export const processJob: Handler<SQSEvent, string> = async (
+  event,
+  context,
+  cb
+) => {
+  let result;
+  try {
+    result = await logoDesign(event, context, cb);
+  } catch (error) {
+    console.error(error);
+    return "Error";
+  }
+  return result;
 };

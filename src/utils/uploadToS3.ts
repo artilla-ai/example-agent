@@ -1,4 +1,9 @@
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import {
+  S3Client,
+  PutObjectCommand,
+  HeadObjectCommand,
+  DeleteObjectCommand,
+} from "@aws-sdk/client-s3";
 import { Bucket } from "sst/node/bucket";
 
 import { PassThrough } from "stream";
@@ -50,6 +55,25 @@ export async function downloadFileAndUploadToS3(
     Body: passThroughStream,
     ContentType: contentType,
   };
+
+  // Check if file already exists, delete if necessary
+  const headObjectCommand = new HeadObjectCommand({
+    Bucket: bucketName,
+    Key: key,
+  });
+  try {
+    await s3Client.send(headObjectCommand);
+    console.log(`File ${key} already exists, deleting...`);
+    await s3Client.send(
+      new DeleteObjectCommand({
+        Bucket: bucketName,
+        Key: key,
+      })
+    );
+    console.log(`File ${key} deleted`);
+  } catch (error) {
+    console.log(`File ${key} does not exist`);
+  }
 
   const upload = new Upload({
     client: s3Client,

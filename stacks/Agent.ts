@@ -1,14 +1,9 @@
-// https://sst.dev/examples/how-to-use-lambda-layers-in-your-serverless-app.html
-import { Bucket, Config, Function, Queue, StackContext } from "sst/constructs";
-import { Duration } from "aws-cdk-lib/core";
 import { Distribution, OriginAccessIdentity } from "aws-cdk-lib/aws-cloudfront";
 import { S3Origin } from "aws-cdk-lib/aws-cloudfront-origins";
+import { Duration } from "aws-cdk-lib/core";
+import { Bucket, Config, Function, Queue, StackContext } from "sst/constructs";
 
 export function Agent({ stack }: StackContext) {
-  const ARTILLA_API_URL = new Config.Parameter(stack, "ARTILLA_API_URL", {
-    value: "http://localhost:3000",
-  });
-
   const ARTILLA_API_KEY = new Config.Secret(stack, "ARTILLA_API_KEY");
 
   const OPENAI_API_KEY = new Config.Secret(stack, "OPENAI_API_KEY");
@@ -28,8 +23,8 @@ export function Agent({ stack }: StackContext) {
     value: distribution.domainName,
   });
 
-  const visibilityTimeoutMultiplier = 2;
-  const jobTimeoutMins = 5;
+  const visibilityTimeoutMultiplier = 6;
+  const jobTimeoutMins = 10;
   const queueVisibilityTimeout = Duration.seconds(
     60 * jobTimeoutMins * visibilityTimeoutMultiplier
   );
@@ -46,7 +41,6 @@ export function Agent({ stack }: StackContext) {
         timeout: 60 * jobTimeoutMins,
         bind: [
           ARTILLA_API_KEY,
-          ARTILLA_API_URL,
           OPENAI_API_KEY,
           DISTRIBUTION_URL,
           jobResultsBucket,
@@ -59,7 +53,7 @@ export function Agent({ stack }: StackContext) {
     handler: "src/lambda.webhook",
     description: "Handles incoming webhook requests from Artilla",
     url: true,
-    bind: [ARTILLA_API_KEY, ARTILLA_API_URL, jobProcessingQueue],
+    bind: [ARTILLA_API_KEY, jobProcessingQueue],
   });
 
   stack.addOutputs({

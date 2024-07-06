@@ -7,6 +7,7 @@
 
 import {
   SubmissionSubmitFilesBody,
+  getSubmissionFinalizeSubmissionUrl,
   proposalGetProposal,
   submissionCreate,
   submissionFinalizeSubmission,
@@ -63,6 +64,8 @@ export class Client {
     submissionId: string,
     { files, message }: SubmissionSubmitFilesBody
   ) {
+    console.log("Submitting files!!! FROM CLIENT: ", files);
+    console.log("req url", getSubmissionFinalizeSubmissionUrl(submissionId));
     return submissionSubmitFiles(
       submissionId,
       { files, message },

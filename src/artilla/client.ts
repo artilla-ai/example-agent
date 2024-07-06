@@ -5,6 +5,119 @@
  * The Artilla API provides developers with the tools to interact with Artilla's AI-native marketplace. This API allows you to access and manage AI agents, perform searches, retrieve task recommendations, and handle user data. Designed to be flexible and scalable, the Artilla API is built with RESTful principles and is documented using Swagger for ease of use and integration.
  * OpenAPI spec version: 0.0.1
  */
+export type WorkspaceGetWorkspace200Workspace = {
+  createdAt: string;
+  id: string;
+  /** @nullable */
+  owner: string | null;
+  status: string;
+  title: string;
+  updatedAt: string;
+};
+
+export type WorkspaceGetWorkspace200TasksItem = {
+  createdAt: string;
+  /** @nullable */
+  data: WorkspaceGetWorkspace200TasksItemData;
+  id: string;
+  mode: string;
+  proposals: WorkspaceGetWorkspace200TasksItemProposalsItem[];
+  status: string;
+  type: string;
+  updatedAt: string;
+  workspaceId: string;
+};
+
+export type WorkspaceGetWorkspace200 = {
+  success: boolean;
+  tasks: WorkspaceGetWorkspace200TasksItem[];
+  workspace: WorkspaceGetWorkspace200Workspace;
+};
+
+/**
+ * @nullable
+ */
+export type WorkspaceGetWorkspace200TasksItemProposalsItemData = unknown | null;
+
+/**
+ * @nullable
+ */
+export type WorkspaceGetWorkspace200TasksItemProposalsItemAgentData = unknown | null;
+
+export type WorkspaceGetWorkspace200TasksItemProposalsItemAgent = {
+  /** @nullable */
+  averageRating: string | null;
+  createdAt: string;
+  /** @nullable */
+  data: WorkspaceGetWorkspace200TasksItemProposalsItemAgentData;
+  freeTier: boolean;
+  id: string;
+  /** @nullable */
+  image: string | null;
+  /** @nullable */
+  instantEnabled: boolean | null;
+  /** @nullable */
+  isApproved: boolean | null;
+  /** @nullable */
+  isFeatured: boolean | null;
+  /** @nullable */
+  isTopRated: boolean | null;
+  /** @nullable */
+  isVerified: boolean | null;
+  /** @nullable */
+  numBookmarks: number | null;
+  /** @nullable */
+  owner: string | null;
+  /** @nullable */
+  preview: string | null;
+  /** @nullable */
+  pricingStrategy: string | null;
+  /** @nullable */
+  ratings: number[] | null;
+  taskTypes: string[];
+  title: string;
+  updatedAt: string;
+  url: string;
+};
+
+export type WorkspaceGetWorkspace200TasksItemProposalsItem = {
+  agent: WorkspaceGetWorkspace200TasksItemProposalsItemAgent;
+  agentId: string;
+  createdAt: string;
+  /** @nullable */
+  data: WorkspaceGetWorkspace200TasksItemProposalsItemData;
+  /** @nullable */
+  description: string | null;
+  estimatedTimeToComplete: number;
+  id: string;
+  price: string;
+  revisions: number;
+  status: string;
+  taskId: string;
+  updatedAt: string;
+  validTill: string;
+};
+
+/**
+ * @nullable
+ */
+export type WorkspaceGetWorkspace200TasksItemData = unknown | null;
+
+export type WorkspaceGetWorkspaceList200WorkspacesItem = {
+  createdAt: string;
+  id: string;
+  /** @nullable */
+  owner: string | null;
+  status: string;
+  title: string;
+  updatedAt: string;
+};
+
+export type WorkspaceGetWorkspaceList200 = {
+  success: boolean;
+  workspaces: WorkspaceGetWorkspaceList200WorkspacesItem[];
+};
+
 export type SubmissionFinalizeSubmission200 = {
   success: boolean;
 };
@@ -145,6 +258,7 @@ export type AgentCreateDefaultTaskForAgent200Workspace = {
   /** @nullable */
   owner: string | null;
   status: string;
+  title: string;
   updatedAt: string;
 };
 
@@ -532,6 +646,96 @@ export const getSubmissionFinalizeSubmissionUrl = (submissionId: string,) => {
 
 export const submissionFinalizeSubmission = async (submissionId: string, options?: RequestInit): Promise<submissionFinalizeSubmissionResponse> => {
   const res = await fetch(getSubmissionFinalizeSubmissionUrl(submissionId),
+  {      
+    ...options,
+    method: 'GET'
+    
+  }
+
+  )
+  const data = await res.json()
+
+  return { status: res.status, data }
+}
+
+
+/**
+ * Fetches the list of workspaces belonging to a user
+ * @summary Fetch users' workspaces
+ */
+export type workspaceGetWorkspaceListResponse = {
+  data: WorkspaceGetWorkspaceList200;
+  status: number;
+}
+
+export const getWorkspaceGetWorkspaceListUrl = () => {
+
+
+  return `http://localhost:3000/api/v1/workspace/`
+}
+
+export const workspaceGetWorkspaceList = async ( options?: RequestInit): Promise<workspaceGetWorkspaceListResponse> => {
+  const res = await fetch(getWorkspaceGetWorkspaceListUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+  }
+
+  )
+  const data = await res.json()
+
+  return { status: res.status, data }
+}
+
+
+/**
+ * Get a workspace by its ID and return all tasks and proposals associated with it
+ * @summary Get a workspace
+ */
+export type workspaceGetWorkspaceResponse = {
+  data: WorkspaceGetWorkspace200;
+  status: number;
+}
+
+export const getWorkspaceGetWorkspaceUrl = (workspaceId: string,) => {
+
+
+  return `http://localhost:3000/api/v1/workspace/${workspaceId}`
+}
+
+export const workspaceGetWorkspace = async (workspaceId: string, options?: RequestInit): Promise<workspaceGetWorkspaceResponse> => {
+  const res = await fetch(getWorkspaceGetWorkspaceUrl(workspaceId),
+  {      
+    ...options,
+    method: 'GET'
+    
+  }
+
+  )
+  const data = await res.json()
+
+  return { status: res.status, data }
+}
+
+
+/**
+ * Watches a workspace for changes using the event streaming and notifies a user when the workspace has been updated. In production, make sure to add the /edge path to the endpoint to ensure long-running connections
+ * @summary Watch workspace for changes
+ */
+export type workspaceGetWatchWorkspaceResponse = {
+  data: void;
+  status: number;
+}
+
+export const getWorkspaceGetWatchWorkspaceUrl = (workspaceId: string,) => {
+
+
+  return `http://localhost:3000/api/v1/workspace/${workspaceId}/watch`
+}
+
+export const workspaceGetWatchWorkspace = async (workspaceId: string, options?: RequestInit): Promise<workspaceGetWatchWorkspaceResponse> => {
+  const res = await fetch(getWorkspaceGetWatchWorkspaceUrl(workspaceId),
   {      
     ...options,
     method: 'GET'

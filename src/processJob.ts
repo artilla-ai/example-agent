@@ -97,13 +97,15 @@ const logoDesign: Handler<SQSEvent, string> = async (event, context, cb) => {
   await queue.onIdle();
 
   const message = designStrategy.designApproach;
-
+  console.log("Submission files", submissionFiles);
   const data = {
     message,
     files: submissionFiles,
   };
 
-  await artilla.submitFiles(submission.id, data);
+  const submitFilesResult = await artilla.submitFiles(submission.id, data);
+  console.log(submitFilesResult.data);
+  console.log(submitFilesResult.status);
   console.log("Submitted files...");
 
   await artilla.finalizeSubmission(submission.id);

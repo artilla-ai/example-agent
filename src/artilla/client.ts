@@ -5,6 +5,107 @@
  * The Artilla API provides developers with the tools to interact with Artilla's AI-native marketplace. This API allows you to access and manage AI agents, perform searches, retrieve task recommendations, and handle user data. Designed to be flexible and scalable, the Artilla API is built with RESTful principles and is documented using Swagger for ease of use and integration.
  * OpenAPI spec version: 0.0.1
  */
+export type UserMe200 = {
+  agents: UserMe200AgentsItem[];
+  success: boolean;
+  user: UserMe200User;
+};
+
+/**
+ * @nullable
+ */
+export type UserMe200UserPaymentDetails = unknown | null;
+
+/**
+ * @nullable
+ */
+export type UserMe200UserMembershipDetails = unknown | null;
+
+/**
+ * @nullable
+ */
+export type UserMe200UserData = unknown | null;
+
+export type UserMe200User = {
+  /** @nullable */
+  additionalSearches: number | null;
+  createdAt: string;
+  /** @nullable */
+  credits: number | null;
+  /** @nullable */
+  data: UserMe200UserData;
+  email: string;
+  /** @nullable */
+  emailVerified: string | null;
+  id: string;
+  /** @nullable */
+  image: string | null;
+  /** @nullable */
+  membershipDetails: UserMe200UserMembershipDetails;
+  /** @nullable */
+  membershipTier: string | null;
+  /** @nullable */
+  name: string | null;
+  /** @nullable */
+  paymentDetails: UserMe200UserPaymentDetails;
+  /** @nullable */
+  pendingPayout: number | null;
+  /** @nullable */
+  referredBy: string | null;
+  updatedAt: string;
+};
+
+/**
+ * @nullable
+ */
+export type UserMe200AgentsItemData = unknown | null;
+
+export type UserMe200AgentsItem = {
+  /** @nullable */
+  averageRating: string | null;
+  createdAt: string;
+  /** @nullable */
+  data: UserMe200AgentsItemData;
+  freeTier: boolean;
+  id: string;
+  /** @nullable */
+  image: string | null;
+  /** @nullable */
+  instantEnabled: boolean | null;
+  /** @nullable */
+  isApproved: boolean | null;
+  /** @nullable */
+  isFeatured: boolean | null;
+  /** @nullable */
+  isTopRated: boolean | null;
+  /** @nullable */
+  isVerified: boolean | null;
+  /** @nullable */
+  lifetimeEarnings: number | null;
+  /** @nullable */
+  numBookmarks: number | null;
+  /** @nullable */
+  owner: string | null;
+  /** @nullable */
+  preview: string | null;
+  /** @nullable */
+  pricingStrategy: string | null;
+  /** @nullable */
+  ratings: number[] | null;
+  /** @nullable */
+  taskRequests: number | null;
+  /** @nullable */
+  tasksCompleted: number | null;
+  /** @nullable */
+  tasksDisputed: number | null;
+  /** @nullable */
+  tasksStarted: number | null;
+  taskTypes: string[];
+  title: string;
+  updatedAt: string;
+  url: string;
+};
+
 export type WorkspaceGetWorkspace200Workspace = {
   createdAt: string;
   id: string;
@@ -32,6 +133,51 @@ export type WorkspaceGetWorkspace200 = {
   success: boolean;
   tasks: WorkspaceGetWorkspace200TasksItem[];
   workspace: WorkspaceGetWorkspace200Workspace;
+};
+
+/**
+ * @nullable
+ */
+export type WorkspaceGetWorkspace200TasksItemProposalsItemSubmissionsItemRatingData = unknown | null;
+
+export type WorkspaceGetWorkspace200TasksItemProposalsItemSubmissionsItemRating = {
+  /** @nullable */
+  agentId: string | null;
+  /** @nullable */
+  comment: string | null;
+  createdAt: string;
+  /** @nullable */
+  data: WorkspaceGetWorkspace200TasksItemProposalsItemSubmissionsItemRatingData;
+  id: string;
+  rating: number;
+  updatedAt: string;
+};
+
+/**
+ * @nullable
+ */
+export type WorkspaceGetWorkspace200TasksItemProposalsItemSubmissionsItemEvents = unknown | null;
+
+/**
+ * @nullable
+ */
+export type WorkspaceGetWorkspace200TasksItemProposalsItemSubmissionsItemData = unknown | null;
+
+export type WorkspaceGetWorkspace200TasksItemProposalsItemSubmissionsItem = {
+  createdAt: string;
+  /** @nullable */
+  data: WorkspaceGetWorkspace200TasksItemProposalsItemSubmissionsItemData;
+  /** @nullable */
+  events: WorkspaceGetWorkspace200TasksItemProposalsItemSubmissionsItemEvents;
+  id: string;
+  progressPercent: number;
+  proposalId: string;
+  rating: WorkspaceGetWorkspace200TasksItemProposalsItemSubmissionsItemRating;
+  /** @nullable */
+  ratingId: string | null;
+  revision: number;
+  status: string;
+  updatedAt: string;
 };
 
 /**
@@ -65,6 +211,8 @@ export type WorkspaceGetWorkspace200TasksItemProposalsItemAgent = {
   /** @nullable */
   isVerified: boolean | null;
   /** @nullable */
+  lifetimeEarnings: number | null;
+  /** @nullable */
   numBookmarks: number | null;
   /** @nullable */
   owner: string | null;
@@ -74,6 +222,14 @@ export type WorkspaceGetWorkspace200TasksItemProposalsItemAgent = {
   pricingStrategy: string | null;
   /** @nullable */
   ratings: number[] | null;
+  /** @nullable */
+  taskRequests: number | null;
+  /** @nullable */
+  tasksCompleted: number | null;
+  /** @nullable */
+  tasksDisputed: number | null;
+  /** @nullable */
+  tasksStarted: number | null;
   taskTypes: string[];
   title: string;
   updatedAt: string;
@@ -93,6 +249,7 @@ export type WorkspaceGetWorkspace200TasksItemProposalsItem = {
   price: string;
   revisions: number;
   status: string;
+  submissions: WorkspaceGetWorkspace200TasksItemProposalsItemSubmissionsItem[];
   taskId: string;
   updatedAt: string;
   validTill: string;
@@ -116,6 +273,37 @@ export type WorkspaceGetWorkspaceList200WorkspacesItem = {
 export type WorkspaceGetWorkspaceList200 = {
   success: boolean;
   workspaces: WorkspaceGetWorkspaceList200WorkspacesItem[];
+};
+
+export type SubmissionRateSubmission200 = {
+  message?: string;
+  success: boolean;
+};
+
+export type SubmissionRateSubmissionBodyFileRatings = {[key: string]: number | null};
+
+export type SubmissionRateSubmissionBodyFileComments = {[key: string]: string | null};
+
+export type SubmissionRateSubmissionBody = {
+  /** @nullable */
+  comment: string | null;
+  fileComments?: SubmissionRateSubmissionBodyFileComments;
+  fileRatings?: SubmissionRateSubmissionBodyFileRatings;
+  rating: number;
+};
+
+export type SubmissionUpdateProgress200 = {
+  message?: string;
+  success: boolean;
+};
+
+export type SubmissionUpdateProgressBody = {
+  /**
+   * @minimum 0
+   * @maximum 100
+   */
+  progressPercent: number;
+  text: string;
 };
 
 export type SubmissionFinalizeSubmission200 = {
@@ -158,6 +346,21 @@ export type SubmissionCreateBody = {
   proposalId: string;
 };
 
+export type ProposalGetProposal200 = {
+  proposal: ProposalGetProposal200Proposal;
+  success: boolean;
+};
+
+/**
+ * @nullable
+ */
+export type ProposalGetProposal200ProposalTaskPaymentDetails = unknown | null;
+
+/**
+ * @nullable
+ */
+export type ProposalGetProposal200ProposalTaskMembershipDetails = unknown | null;
+
 /**
  * @nullable
  */
@@ -168,6 +371,8 @@ export type ProposalGetProposal200ProposalTask = {
   additionalSearches: number | null;
   createdAt: string;
   /** @nullable */
+  credits: number | null;
+  /** @nullable */
   data: ProposalGetProposal200ProposalTaskData;
   email: string;
   /** @nullable */
@@ -176,7 +381,15 @@ export type ProposalGetProposal200ProposalTask = {
   /** @nullable */
   image: string | null;
   /** @nullable */
+  membershipDetails: ProposalGetProposal200ProposalTaskMembershipDetails;
+  /** @nullable */
+  membershipTier: string | null;
+  /** @nullable */
   name: string | null;
+  /** @nullable */
+  paymentDetails: ProposalGetProposal200ProposalTaskPaymentDetails;
+  /** @nullable */
+  pendingPayout: number | null;
   /** @nullable */
   referredBy: string | null;
   updatedAt: string;
@@ -206,11 +419,6 @@ export type ProposalGetProposal200Proposal = {
   validTill: string;
 };
 
-export type ProposalGetProposal200 = {
-  proposal: ProposalGetProposal200Proposal;
-  success: boolean;
-};
-
 /**
  * @nullable
  */
@@ -237,6 +445,8 @@ export type ProposalGetProposal200ProposalAgent = {
   /** @nullable */
   isVerified: boolean | null;
   /** @nullable */
+  lifetimeEarnings: number | null;
+  /** @nullable */
   numBookmarks: number | null;
   /** @nullable */
   owner: string | null;
@@ -246,6 +456,14 @@ export type ProposalGetProposal200ProposalAgent = {
   pricingStrategy: string | null;
   /** @nullable */
   ratings: number[] | null;
+  /** @nullable */
+  taskRequests: number | null;
+  /** @nullable */
+  tasksCompleted: number | null;
+  /** @nullable */
+  tasksDisputed: number | null;
+  /** @nullable */
+  tasksStarted: number | null;
   taskTypes: string[];
   title: string;
   updatedAt: string;
@@ -370,6 +588,8 @@ export type AgentGetAgent200AgentAllOf = {
   /** @nullable */
   isVerified: boolean | null;
   /** @nullable */
+  lifetimeEarnings: number | null;
+  /** @nullable */
   numBookmarks: number | null;
   /** @nullable */
   owner: string | null;
@@ -379,6 +599,14 @@ export type AgentGetAgent200AgentAllOf = {
   pricingStrategy: string | null;
   /** @nullable */
   ratings: number[] | null;
+  /** @nullable */
+  taskRequests: number | null;
+  /** @nullable */
+  tasksCompleted: number | null;
+  /** @nullable */
+  tasksDisputed: number | null;
+  /** @nullable */
+  tasksStarted: number | null;
   taskTypes: string[];
   title: string;
   updatedAt: string;
@@ -427,6 +655,8 @@ export type AgentList200AgentsItemAllOf = {
   /** @nullable */
   isVerified: boolean | null;
   /** @nullable */
+  lifetimeEarnings: number | null;
+  /** @nullable */
   numBookmarks: number | null;
   /** @nullable */
   owner: string | null;
@@ -436,6 +666,14 @@ export type AgentList200AgentsItemAllOf = {
   pricingStrategy: string | null;
   /** @nullable */
   ratings: number[] | null;
+  /** @nullable */
+  taskRequests: number | null;
+  /** @nullable */
+  tasksCompleted: number | null;
+  /** @nullable */
+  tasksDisputed: number | null;
+  /** @nullable */
+  tasksStarted: number | null;
   taskTypes: string[];
   title: string;
   updatedAt: string;
@@ -567,8 +805,8 @@ export const proposalGetProposal = async (proposalId: string, options?: RequestI
 
 
 /**
- * Finalizes a submission and notifies the client
- * @summary Finalize a submission
+ * Create a new submission
+ * @summary Create a new submission for a proposal
  */
 export type submissionCreateResponse = {
   data: SubmissionCreate200;
@@ -631,7 +869,7 @@ export const submissionSubmitFiles = async (submissionId: string,
 
 /**
  * Upload files to a submission
- * @summary Submit files
+ * @summary Finalize a submission
  */
 export type submissionFinalizeSubmissionResponse = {
   data: SubmissionFinalizeSubmission200;
@@ -650,6 +888,70 @@ export const submissionFinalizeSubmission = async (submissionId: string, options
     ...options,
     method: 'GET'
     
+  }
+
+  )
+  const data = await res.json()
+
+  return { status: res.status, data }
+}
+
+
+/**
+ * Set the progress on a submission
+ * @summary Set submission progress
+ */
+export type submissionUpdateProgressResponse = {
+  data: SubmissionUpdateProgress200;
+  status: number;
+}
+
+export const getSubmissionUpdateProgressUrl = (submissionId: string,) => {
+
+
+  return `http://localhost:3000/api/v1/submission/${submissionId}/progress`
+}
+
+export const submissionUpdateProgress = async (submissionId: string,
+    submissionUpdateProgressBody: SubmissionUpdateProgressBody, options?: RequestInit): Promise<submissionUpdateProgressResponse> => {
+  const res = await fetch(getSubmissionUpdateProgressUrl(submissionId),
+  {      
+    ...options,
+    method: 'POST',
+    body: JSON.stringify(
+      submissionUpdateProgressBody,)
+  }
+
+  )
+  const data = await res.json()
+
+  return { status: res.status, data }
+}
+
+
+/**
+ * Allows users to add a rating for the submission completed by the agent by providing a 1-5 start rating and optional comments
+ * @summary Rate a submission
+ */
+export type submissionRateSubmissionResponse = {
+  data: SubmissionRateSubmission200;
+  status: number;
+}
+
+export const getSubmissionRateSubmissionUrl = (submissionId: string,) => {
+
+
+  return `http://localhost:3000/api/v1/submission/${submissionId}/rating`
+}
+
+export const submissionRateSubmission = async (submissionId: string,
+    submissionRateSubmissionBody: SubmissionRateSubmissionBody, options?: RequestInit): Promise<submissionRateSubmissionResponse> => {
+  const res = await fetch(getSubmissionRateSubmissionUrl(submissionId),
+  {      
+    ...options,
+    method: 'POST',
+    body: JSON.stringify(
+      submissionRateSubmissionBody,)
   }
 
   )
@@ -736,6 +1038,36 @@ export const getWorkspaceGetWatchWorkspaceUrl = (workspaceId: string,) => {
 
 export const workspaceGetWatchWorkspace = async (workspaceId: string, options?: RequestInit): Promise<workspaceGetWatchWorkspaceResponse> => {
   const res = await fetch(getWorkspaceGetWatchWorkspaceUrl(workspaceId),
+  {      
+    ...options,
+    method: 'GET'
+    
+  }
+
+  )
+  const data = await res.json()
+
+  return { status: res.status, data }
+}
+
+
+/**
+ * Upload files to a submission
+ * @summary Submit files
+ */
+export type userMeResponse = {
+  data: UserMe200;
+  status: number;
+}
+
+export const getUserMeUrl = () => {
+
+
+  return `http://localhost:3000/api/v1/user/me`
+}
+
+export const userMe = async ( options?: RequestInit): Promise<userMeResponse> => {
+  const res = await fetch(getUserMeUrl(),
   {      
     ...options,
     method: 'GET'

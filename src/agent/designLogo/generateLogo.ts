@@ -3,7 +3,7 @@ import { LogoIdea } from "./designStrategy";
 import { Config } from "sst/node/config";
 
 export function generatePrompt(idea: LogoIdea) {
-  return `a single ${idea.style} logo featuring "${idea.iconography}" motif inspired by ${idea.designer} with ${idea.colorPalette} on a single-color ${idea.backgroundColor} background`;
+  return `one logo, ${idea.style} style with ${idea.iconography} motif, ${idea.colorPalette} on a flat ${idea.backgroundColor} background, very simple vector shapes, no swatch, no variations, no text or lettering`;
 }
 
 export async function generateLogo(idea: LogoIdea) {

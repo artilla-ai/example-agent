@@ -48,12 +48,19 @@ const logoDesign: Handler<SQSEvent, string> = async (event, context, cb) => {
   const proposal = result.data.proposal;
   const taskData = proposal.task.data as any;
   const taskId = proposal.id;
+  console.log("Creating submission: ", proposalId);
 
   const createSubmissionResult = await artilla.createSubmission(proposalId);
   const submission = createSubmissionResult.data.submission;
   console.log("Created submission: ", submission.id);
 
   console.log("Designing strategy...");
+  10 + 80 + 10;
+  await artilla.updateSubmissionProgress(
+    submission.id,
+    10,
+    `Generating design strategy`
+  );
 
   const designStrategy = await createDesignStrategy({
     name: taskData.name,
@@ -65,6 +72,8 @@ const logoDesign: Handler<SQSEvent, string> = async (event, context, cb) => {
   const queue = new PQueue({ concurrency: 4, autoStart: false });
 
   const submissionFiles: SubmissionSubmitFilesBody["files"] = [];
+
+  let submissionProgress = 0;
 
   for (const i in designStrategy.ideas) {
     const doDesign = async () => {
@@ -78,7 +87,23 @@ const logoDesign: Handler<SQSEvent, string> = async (event, context, cb) => {
             logoIdx,
             taskId,
             proposalId,
-            submission
+            submission,
+            async () => {
+              submissionProgress += 10;
+              await artilla.updateSubmissionProgress(
+                submission.id,
+                submissionProgress,
+                `Generated logo #${logoIdx}`
+              );
+            },
+            async () => {
+              submissionProgress += 10;
+              await artilla.updateSubmissionProgress(
+                submission.id,
+                submissionProgress,
+                `Uploaded logo #${logoIdx}`
+              );
+            }
           ),
         {
           retries: 3,
@@ -119,15 +144,20 @@ async function designAndUploadLogo(
   logoIdx: number,
   taskId: string,
   proposalId: string,
-  submission: any
+  submission: any,
+  onLogoGenerated,
+  onLogoUploadedGenerated
 ) {
   const logoUrl = await generateLogo(idea);
+  await onLogoGenerated();
   const bucketKey = `logos/task-${taskId}/proposal-${proposalId}/revision-${submission.revision}/logo-${logoIdx}.png`;
   const { contentType } = await downloadFileAndUploadToS3(
     logoUrl,
     Bucket.LogoSageFiles.bucketName,
     bucketKey
   );
+
+  await onLogoUploadedGenerated();
 
   const submissionFileUrl = new URL("https://" + Config.DISTRIBUTION_URL);
   submissionFileUrl.pathname = bucketKey;

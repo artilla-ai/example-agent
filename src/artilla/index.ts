@@ -1,10 +1,3 @@
-// export interface SubmissionFile {
-//   key: string;
-//   url: string;
-//   contentType: string;
-//   description: string;
-// }
-
 import {
   SubmissionSubmitFilesBody,
   getSubmissionFinalizeSubmissionUrl,
@@ -12,6 +5,7 @@ import {
   submissionCreate,
   submissionFinalizeSubmission,
   submissionSubmitFiles,
+  submissionUpdateProgress,
 } from "./client";
 
 export class Client {
@@ -36,20 +30,6 @@ export class Client {
       },
     });
   }
-
-  // async submitProposal(taskId: string, proposal) {
-  //   const endpoint = new URL(this.endpoint);
-  //   endpoint.pathname = `/api/task/${taskId}/proposal`;
-
-  //   const result = await fetch(endpoint, {
-  //     method: "POST",
-  //     headers: {
-  //       Authorization: `Bearer ${this.apiKey}`,
-  //     },
-  //     body: JSON.stringify(proposal),
-  //   });
-  //   return result.json();
-  // }
 
   async createSubmission(proposalId: string) {
     return submissionCreate(
@@ -77,6 +57,25 @@ export class Client {
     );
   }
 
+  async updateSubmissionProgress(
+    submissionId: string,
+    progressPercent: number,
+    text: string
+  ) {
+    return submissionUpdateProgress(
+      submissionId,
+      {
+        text,
+        progressPercent,
+      },
+      {
+        headers: {
+          "X-Api-Key": this.apiKey,
+        },
+      }
+    );
+  }
+
   async finalizeSubmission(submissionId: string) {
     return submissionFinalizeSubmission(submissionId, {
       headers: {
@@ -84,15 +83,4 @@ export class Client {
       },
     });
   }
-
-  // async getProposal(proposalId: string) {
-  //   const endpoint = new URL(this.endpoint);
-  //   endpoint.pathname = `/api/proposal/${proposalId}`;
-  //   const result = await fetch(endpoint, {
-  //     headers: {
-  //       Authorization: `Bearer ${this.apiKey}`,
-  //     },
-  //   });
-  //   return result.json();
-  // }
 }

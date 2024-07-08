@@ -13,22 +13,16 @@ export const logoStyles = [
   "Flat",
   "Art Deco",
   "Luxury",
-  "Industrial",
-  "Organic",
   "Sporty",
   "Calligraphic",
   "Stencil",
   "Comic",
   "Pixel Art",
   "Mosaic",
-  "Brush Stroke",
   "Origami",
   "Line Art",
-  "Metallic",
   "Duotone",
   "Tribal",
-  "Graffiti",
-  "Simplistic",
 ] as const;
 
 export const logoTypes = [

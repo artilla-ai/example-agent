@@ -2,7 +2,8 @@ import { Handler, SQSEvent } from "aws-lambda";
 import { Bucket } from "sst/node/bucket";
 import { Config } from "sst/node/config";
 import { Client } from "./artilla";
-
+import PQueue from "p-queue";
+import pRetry from "p-retry";
 import {
   LogoIdea,
   createDesignStrategy,
@@ -10,8 +11,6 @@ import {
 import { generateLogo } from "./agent/designLogo/generateLogo";
 import { SubmissionSubmitFilesBody } from "./artilla/client";
 import { downloadFileAndUploadToS3 } from "./utils/uploadToS3";
-import PQueue from "p-queue";
-import pRetry, { AbortError } from "p-retry";
 
 /**
  * Job processing queue - processes logo design jobs
@@ -38,24 +37,24 @@ export const processJob: Handler<SQSEvent, string> = async (
 const logoDesign: Handler<SQSEvent, string> = async (event, context, cb) => {
   const proposalId = event.Records[0].body;
 
+  process.env.ARTILLA_API_ENDPOINT = Config.ARTILLA_API_ENDPOINT;
   const artilla = new Client({
     apiKey: Config.ARTILLA_API_KEY,
   });
 
-  console.log("Fetching proposal: ", proposalId);
   const result = await artilla.getProposal(proposalId);
-
   const proposal = result.data.proposal;
+
   const taskData = proposal.task.data as any;
   const taskId = proposal.id;
+
   console.log("Creating submission: ", proposalId);
 
   const createSubmissionResult = await artilla.createSubmission(proposalId);
   const submission = createSubmissionResult.data.submission;
-  console.log("Created submission: ", submission.id);
 
   console.log("Designing strategy...");
-  10 + 80 + 10;
+
   await artilla.updateSubmissionProgress(
     submission.id,
     10,
@@ -131,7 +130,8 @@ const logoDesign: Handler<SQSEvent, string> = async (event, context, cb) => {
   const submitFilesResult = await artilla.submitFiles(submission.id, data);
   console.log(submitFilesResult.data);
   console.log(submitFilesResult.status);
-  console.log("Submitted files...");
+
+  console.log("Submitted files.");
 
   await artilla.finalizeSubmission(submission.id);
   console.log("Finalized submission!");

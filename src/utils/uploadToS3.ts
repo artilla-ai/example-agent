@@ -1,15 +1,12 @@
 import {
-  S3Client,
-  PutObjectCommand,
-  HeadObjectCommand,
   DeleteObjectCommand,
+  HeadObjectCommand,
+  S3Client,
 } from "@aws-sdk/client-s3";
-import { Bucket } from "sst/node/bucket";
 
-import { PassThrough } from "stream";
-import { Readable } from "stream";
-import { pipeline } from "stream/promises";
 import { Upload } from "@aws-sdk/lib-storage";
+import { PassThrough, Readable } from "stream";
+import { pipeline } from "stream/promises";
 
 const s3Client = new S3Client();
 
@@ -86,12 +83,3 @@ export async function downloadFileAndUploadToS3(
 
   return { contentType, key };
 }
-
-// Example usage
-// downloadFileAndUploadToS3(
-//   "https://example.com/file.jpg",
-//   "your-bucket-name",
-//   "path/to/your/file.jpg"
-// )
-//   .then(() => console.log("Download and upload completed"))
-//   .catch((error) => console.error("Error:", error));

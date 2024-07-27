@@ -18,6 +18,7 @@ export const webhook: Handler<LambdaFunctionURLEvent, string> = async (
   }
 
   const eventType = data.eventType;
+
   if (eventType === "proposal.accepted") {
     const client = new SQSClient({ region: process.env.AWS_REGION });
     await client.send(
@@ -28,6 +29,9 @@ export const webhook: Handler<LambdaFunctionURLEvent, string> = async (
       })
     );
     return `proposal.accepted ${data.payload.proposal.id}`;
+  } else if (eventType === "test") {
+    console.log("Test event received.");
+    return "Test event received.";
   } else {
     return `Event type ${eventType} not supported.`;
   }

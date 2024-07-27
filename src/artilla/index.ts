@@ -1,3 +1,5 @@
+import { Artilla } from "artilla";
+
 import {
   SubmissionSubmitFilesBody,
   getSubmissionFinalizeSubmissionUrl,

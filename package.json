@@ -34,6 +34,7 @@
     "@aws-sdk/lib-storage": "^3.606.0",
     "@langchain/core": "^0.1.61",
     "@langchain/openai": "^0.0.28",
+    "artilla": "0.0.1-alpha.1",
     "langchain": "^0.1.36",
     "luxon": "^3.4.4",
     "openai": "^4.52.2",

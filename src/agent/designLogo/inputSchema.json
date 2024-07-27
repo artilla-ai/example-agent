@@ -1,0 +1,25 @@
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "The name of the company or service"
+    },
+    "what": { "type": "string", "description": "Tell us what you're making" },
+    "forWho": {
+      "type": "string",
+      "description": "The intended audience for your product or service"
+    },
+    "description": {
+      "type": "string",
+      "description": "A short 1-2 sentence description of the product or service"
+    },
+    "details": {
+      "type": "string",
+      "description": "Any additional details you would like to share"
+    }
+  },
+  "required": ["what", "forWho", "description"],
+  "additionalProperties": false,
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

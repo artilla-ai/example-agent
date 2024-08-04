@@ -1,11 +1,7 @@
 import { ChatPromptTemplate } from "@langchain/core/prompts";
+import { StructuredOutputParser } from "langchain/output_parsers";
 import { z } from "zod";
 import { designers, logoStyles, logoTypes, movements } from "./constants";
-import { StructuredOutputParser } from "langchain/output_parsers";
-import { RunnableSequence } from "@langchain/core/runnables";
-import { ChatOpenAI } from "@langchain/openai";
-import { Config } from "sst/node/config";
-import pRetry, { AbortError } from "p-retry";
 
 const systemRoleTemplate =
   "You are an expert graphic designer specializing in logo design.";
@@ -88,7 +84,7 @@ const looseDesignStrategySchema = z.object({
     .max(4),
 });
 
-const designStrategyParser = StructuredOutputParser.fromZodSchema(
+export const designStrategyParser = StructuredOutputParser.fromZodSchema(
   looseDesignStrategySchema
 );
 
@@ -108,47 +104,10 @@ TARGET_AUDIENCE_OR_CUSTOMERS: {targetAudience}
 DETAILS: {details}
 `;
 
-const promptTemplate = await ChatPromptTemplate.fromMessages([
+export const promptTemplate = await ChatPromptTemplate.fromMessages([
   ["system", systemRoleTemplate],
   ["system", designStrategyTemplate],
   ["user", clientRequestTemplate],
 ]).partial({
   formatInstructions: designStrategyParser.getFormatInstructions(),
 });
-
-export async function createDesignStrategy({
-  name,
-  shortDescription,
-  fullDescription,
-  targetAudience,
-  details = "Not avaliable",
-}: {
-  name: string;
-  shortDescription: string;
-  fullDescription: string;
-  targetAudience: string;
-  details?: string;
-}) {
-  const model = new ChatOpenAI({
-    model: "gpt-4o",
-    apiKey: process.env.OPENAI_API_KEY || Config.OPENAI_API_KEY,
-  }).bind({ response_format: { type: "json_object" } });
-
-  const chain = RunnableSequence.from([
-    promptTemplate,
-    model,
-    designStrategyParser,
-  ]);
-
-  async function run() {
-    return chain.invoke({
-      name,
-      shortDescription,
-      fullDescription,
-      targetAudience,
-      details,
-    });
-  }
-
-  return pRetry(run, { retries: 3 });
-}

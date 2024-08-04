@@ -1,16 +1,22 @@
+import Artilla from "artilla";
+import { SubmissionUploadParams } from "artilla/resources";
 import { Handler, SQSEvent } from "aws-lambda";
-import { Bucket } from "sst/node/bucket";
-import { Config } from "sst/node/config";
-import { Client } from "./artilla";
 import PQueue from "p-queue";
 import pRetry from "p-retry";
-import {
-  LogoIdea,
-  createDesignStrategy,
-} from "./agent/designLogo/designStrategy";
-import { generateLogo } from "./agent/designLogo/generateLogo";
-import { SubmissionSubmitFilesBody } from "./artilla/client";
-import { downloadFileAndUploadToS3 } from "./utils/uploadToS3";
+import { Config } from "sst/node/config";
+import { createDesignStrategy } from "./agent/designStrategy";
+import { LogoIdea } from "./agent/prompts";
+import { generateLogo } from "./agent/generateLogo";
+import { ChatOpenAI } from "@langchain/openai";
+import OpenAI from "openai";
+
+interface LogoDesignInputs {
+  name?: string;
+  description: string;
+  what: string;
+  forWho: string;
+  details?: string;
+}
 
 /**
  * Job processing queue - processes logo design jobs
@@ -37,137 +43,89 @@ export const processJob: Handler<SQSEvent, string> = async (
 const logoDesign: Handler<SQSEvent, string> = async (event, context, cb) => {
   const proposalId = event.Records[0].body;
 
-  process.env.ARTILLA_API_ENDPOINT = Config.ARTILLA_API_ENDPOINT;
-  const artilla = new Client({
-    apiKey: Config.ARTILLA_API_KEY,
+  const artilla = new Artilla({
+    baseURL: Config.ARTILLA_API_ENDPOINT,
+    defaultHeaders: {
+      "X-Api-Key": Config.ARTILLA_API_KEY,
+    },
   });
 
-  const result = await artilla.getProposal(proposalId);
-  const proposal = result.data.proposal;
+  const openai = new OpenAI({
+    apiKey: Config.OPENAI_API_KEY,
+  });
 
-  const taskData = proposal.task.data as any;
-  const taskId = proposal.id;
+  const model = new ChatOpenAI({
+    model: "gpt-4o",
+    apiKey: Config.OPENAI_API_KEY,
+  }).bind({ response_format: { type: "json_object" } });
 
-  console.log("Creating submission: ", proposalId);
+  // 1. Fetch the proposal fron Artilla and extract the task data
+  const result = await artilla.proposals.retrieve(proposalId);
+  const proposal = result.proposal;
+  const taskData = proposal.task.data as LogoDesignInputs;
 
-  const createSubmissionResult = await artilla.createSubmission(proposalId);
-  const submission = createSubmissionResult.data.submission;
+  // 2. Create a new submission
+  const { submission } = await artilla.submissions.create({
+    proposalId: proposalId,
+  });
 
-  console.log("Designing strategy...");
+  await artilla.submissions.progress(submission.id, {
+    progressPercent: 10,
+    text: `Generating design strategy`,
+  });
 
-  await artilla.updateSubmissionProgress(
-    submission.id,
-    10,
-    `Generating design strategy`
+  const designStrategy = await pRetry(
+    () =>
+      createDesignStrategy({
+        model,
+        name: taskData.name,
+        fullDescription: taskData.description,
+        shortDescription: taskData.what,
+        targetAudience: taskData.forWho,
+        details: taskData.details,
+      }),
+    { retries: 3 }
   );
-
-  const designStrategy = await createDesignStrategy({
-    name: taskData.name,
-    fullDescription: taskData.description,
-    shortDescription: taskData.what,
-    targetAudience: taskData.forWho,
-  });
 
   const queue = new PQueue({ concurrency: 4, autoStart: false });
 
-  const submissionFiles: SubmissionSubmitFilesBody["files"] = [];
+  const submissionFiles: SubmissionUploadParams["files"] = [];
+
+  designStrategy.ideas.forEach((idea, i) => {
+    queue.add(async () => {
+      return pRetry(async () => {
+        const logoUrl = await generateLogo(idea as LogoIdea, openai);
+        const submissionFile = {
+          key: `logo-${i}.png`,
+          url: logoUrl,
+          contentType: "image/png",
+          description: idea.justification,
+        };
+        submissionFiles.push(submissionFile);
+        return submissionFile;
+      });
+    });
+  });
 
   let submissionProgress = 0;
-
-  for (const i in designStrategy.ideas) {
-    const doDesign = async () => {
-      const logoIdx = parseInt(i) + 1;
-      console.log(`Implementing idea #${logoIdx}...`);
-      const idea = designStrategy.ideas[i];
-      const submissionFile = await pRetry(
-        () =>
-          designAndUploadLogo(
-            idea as LogoIdea,
-            logoIdx,
-            taskId,
-            proposalId,
-            submission,
-            async () => {
-              submissionProgress += 10;
-              await artilla.updateSubmissionProgress(
-                submission.id,
-                submissionProgress,
-                `Generated logo #${logoIdx}`
-              );
-            },
-            async () => {
-              submissionProgress += 10;
-              await artilla.updateSubmissionProgress(
-                submission.id,
-                submissionProgress,
-                `Uploaded logo #${logoIdx}`
-              );
-            }
-          ),
-        {
-          retries: 3,
-          onFailedAttempt: (error) => {
-            console.error(error);
-            console.error(idea);
-          },
-        }
-      );
-      submissionFiles.push(submissionFile);
-    };
-    queue.add(doDesign);
-  }
+  queue.on("completed", async (submissionFile) => {
+    console.debug(`Completed ${submissionFile.key}`);
+    submissionProgress += 10;
+    await artilla.submissions.progress(submission.id, {
+      progressPercent: submissionProgress,
+      text: `Created ${submissionFile.key}`,
+    });
+  });
 
   await queue.start();
   await queue.onIdle();
 
-  const message = designStrategy.designApproach;
-  console.log("Submission files", submissionFiles);
-  const data = {
-    message,
+  await artilla.submissions.upload(submission.id, {
+    message: designStrategy.designApproach,
     files: submissionFiles,
-  };
+  });
 
-  const submitFilesResult = await artilla.submitFiles(submission.id, data);
-  console.log(submitFilesResult.data);
-  console.log(submitFilesResult.status);
-
-  console.log("Submitted files.");
-
-  await artilla.finalizeSubmission(submission.id);
-  console.log("Finalized submission!");
+  await artilla.submissions.finalize(submission.id);
 
   return "Done";
 };
-
-async function designAndUploadLogo(
-  idea: LogoIdea,
-  logoIdx: number,
-  taskId: string,
-  proposalId: string,
-  submission: any,
-  onLogoGenerated,
-  onLogoUploadedGenerated
-) {
-  const logoUrl = await generateLogo(idea);
-  await onLogoGenerated();
-  const bucketKey = `logos/task-${taskId}/proposal-${proposalId}/revision-${submission.revision}/logo-${logoIdx}.png`;
-  const { contentType } = await downloadFileAndUploadToS3(
-    logoUrl,
-    Bucket.LogoSageFiles.bucketName,
-    bucketKey
-  );
-
-  await onLogoUploadedGenerated();
-
-  const submissionFileUrl = new URL("https://" + Config.DISTRIBUTION_URL);
-  submissionFileUrl.pathname = bucketKey;
-
-  const submissionFile = {
-    key: `logo-${logoIdx}.png`,
-    url: submissionFileUrl.toString(),
-    contentType,
-    description: idea.justification,
-  };
-  console.log(`Logo uploaded to URL: ${submissionFileUrl.toString()}`);
-  return submissionFile;
-}

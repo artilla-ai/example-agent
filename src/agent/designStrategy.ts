@@ -1,6 +1,4 @@
 import { Runnable, RunnableSequence } from "@langchain/core/runnables";
-import { type ChatOpenAI } from "@langchain/openai";
-import { Config } from "sst/node/config";
 import { designStrategyParser, promptTemplate } from "./prompts";
 
 export interface LogoDesignTaskDescription {

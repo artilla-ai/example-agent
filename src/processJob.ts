@@ -1,3 +1,24 @@
+/**
+ * This file contains the code for the job processing function.
+ *
+ * The function processes logo design jobs by generating a design strategy
+ * and creating logo designs based on that strategy. It is triggered by an
+ * SQS message containing the proposal ID.
+ *
+ * The function:
+ * 1. Retrieves the proposal from Artilla.
+ * 2. Extracts the task data.
+ * 3. Creates a new submission for the proposal.
+ * 4. Generates a design strategy using OpenAI's GPT-4 model.
+ * 5. Creates logo designs based on the strategy.
+ * 6. Updates the submission progress as it creates the designs.
+ * 7. Uploads the designs to Artilla.
+ * 8. Finalizes the submission once all designs have been uploaded.
+ *
+ * The function returns "Done" once the job is complete.
+ *
+ * You can use this template to create your own job processing function.
+ */
 import Artilla from "artilla";
 import { SubmissionUploadParams } from "artilla/resources";
 import { Handler, SQSEvent } from "aws-lambda";
@@ -41,8 +62,15 @@ export const processJob: Handler<SQSEvent, string> = async (
 };
 
 const logoDesign: Handler<SQSEvent, string> = async (event, context, cb) => {
+  /**
+   * The proposal ID is passed in the SQS message body
+   */
   const proposalId = event.Records[0].body;
-
+  console.log(Config.ARTILLA_API_KEY);
+  /**
+   * Initialize the Artilla and OpenAI clients.
+   * We use the Config object set up in the SST app to get the API keys and endpoints
+   */
   const artilla = new Artilla({
     baseURL: Config.ARTILLA_API_ENDPOINT,
     defaultHeaders: {
@@ -59,21 +87,32 @@ const logoDesign: Handler<SQSEvent, string> = async (event, context, cb) => {
     apiKey: Config.OPENAI_API_KEY,
   }).bind({ response_format: { type: "json_object" } });
 
-  // 1. Fetch the proposal fron Artilla and extract the task data
+  /**
+   * Now, we can start processing the job. We begin by retrieving the proposal
+   * from Artilla and extracting the task data.
+   */
   const result = await artilla.proposals.retrieve(proposalId);
   const proposal = result.proposal;
   const taskData = proposal.task.data as LogoDesignInputs;
 
-  // 2. Create a new submission
+  /**
+   * Create a new submission for the proposal
+   */
   const { submission } = await artilla.submissions.create({
     proposalId: proposalId,
   });
-
+  /**
+   * Update the submission progress to 10% and set the text to "Generating design strategy"
+   */
   await artilla.submissions.progress(submission.id, {
     progressPercent: 10,
     text: `Generating design strategy`,
   });
 
+  /**
+   * Then, we kick off the design strategy generation process. We use pRetry to retry the
+   * operation up to 3 times in case of failure.
+   */
   const designStrategy = await pRetry(
     () =>
       createDesignStrategy({
@@ -87,6 +126,10 @@ const logoDesign: Handler<SQSEvent, string> = async (event, context, cb) => {
     { retries: 3 }
   );
 
+  /**
+   * Now that we have the design strategy, we can start creating the logo designs.
+   * We use a PQueue to control the concurrency of the logo generation process.
+   */
   const queue = new PQueue({ concurrency: 4, autoStart: false });
 
   const submissionFiles: SubmissionUploadParams["files"] = [];
@@ -107,9 +150,9 @@ const logoDesign: Handler<SQSEvent, string> = async (event, context, cb) => {
     });
   });
 
+  // Update the submission progress as the logo designs are created
   let submissionProgress = 0;
   queue.on("completed", async (submissionFile) => {
-    console.debug(`Completed ${submissionFile.key}`);
     submissionProgress += 10;
     await artilla.submissions.progress(submission.id, {
       progressPercent: submissionProgress,
@@ -117,9 +160,14 @@ const logoDesign: Handler<SQSEvent, string> = async (event, context, cb) => {
     });
   });
 
+  // Start the queue and wait for all logo designs to be created
   await queue.start();
   await queue.onIdle();
 
+  /**
+   * Once all logo designs have been created, we upload the designs to Artilla
+   * and finalize the submission.
+   */
   await artilla.submissions.upload(submission.id, {
     message: designStrategy.designApproach,
     files: submissionFiles,

@@ -1,3 +1,8 @@
+/**
+ * Constants for the agent.
+ * These are used to guide the design process and provide context for the AI.
+ */
+
 export const logoStyles = [
   "Minimalist",
   "Vintage",

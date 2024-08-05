@@ -1,3 +1,8 @@
+/**
+ * This file contains the prompts and schemas for the design agent
+ *
+ */
+
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { StructuredOutputParser } from "langchain/output_parsers";
 import { z } from "zod";

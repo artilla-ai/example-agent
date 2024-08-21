@@ -18,11 +18,11 @@ function getSQSClient() {
  * @param proposalId - the task id to enqueue
  * @returns {Promise<SendMessageCommandOutput>} A promise that resolves to the output of the SendMessageCommand
  */
-export function enqueueAcceptedTaskProposal(proposalId: string) {
+export function enqueueTask(taskId: string) {
   return getSQSClient().send(
     new SendMessageCommand({
       QueueUrl: Queue.jobProcessingQueue.queueUrl,
-      MessageBody: proposalId,
+      MessageBody: taskId,
       DelaySeconds: 0,
     })
   );

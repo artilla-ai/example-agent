@@ -1,5 +1,5 @@
 import { Handler, LambdaFunctionURLEvent } from "aws-lambda";
-import { enqueueAcceptedTaskProposal } from "./queue";
+import { enqueueTask } from "./queue";
 
 /**
  * Handles incoming webhooks from Artilla
@@ -24,14 +24,16 @@ export const webhook: Handler<LambdaFunctionURLEvent, string> = async (
 
   const eventType = data.eventType;
 
-  if (eventType === "proposal.accepted") {
-    const proposalId = data.payload.proposal.id;
-    await enqueueAcceptedTaskProposal(proposalId);
-    return `proposal.accepted ${proposalId}`;
-  } else if (eventType === "test") {
-    return "test success";
+  console.log(data);
+
+  if (eventType === "test") {
+    return "success";
+  } else if (eventType === "task.created") {
+    const taskId = data.payload.task.id;
+    await enqueueTask(taskId);
+    return `${eventType} ${taskId}`;
   }
-  // This is a new event type that we don't know how to handle
+
   const message = `Event type ${eventType} not supported.`;
   console.error(message);
   return message;

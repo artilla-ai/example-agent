@@ -65,8 +65,7 @@ const logoDesign: Handler<SQSEvent, string> = async (event, context, cb) => {
   /**
    * The proposal ID is passed in the SQS message body
    */
-  const proposalId = event.Records[0].body;
-  console.log(Config.ARTILLA_API_KEY);
+  const taskId = event.Records[0].body;
   /**
    * Initialize the Artilla and OpenAI clients.
    * We use the Config object set up in the SST app to get the API keys and endpoints
@@ -88,31 +87,26 @@ const logoDesign: Handler<SQSEvent, string> = async (event, context, cb) => {
   }).bind({ response_format: { type: "json_object" } });
 
   /**
-   * Now, we can start processing the job. We begin by retrieving the proposal
-   * from Artilla and extracting the task data.
+   * Now, we can start processing the job. We begin by retrieving the task data
    */
-  const result = await artilla.proposals.retrieve(proposalId);
-  const proposal = result.proposal;
-  const taskData = proposal.task.data as LogoDesignInputs;
+  const { task } = await artilla.tasks.retrieve(taskId);
+  const taskData = task.data as any;
 
   /**
    * Create a new submission for the proposal
    */
-  const { submission } = await artilla.submissions.create({
-    proposalId: proposalId,
-  });
-  /**
-   * Update the submission progress to 10% and set the text to "Generating design strategy"
-   */
-  await artilla.submissions.progress(submission.id, {
+
+  const { submission } = await artilla.submissions.create({ taskId });
+
+  await artilla.submissions.setProgress(submission.id, {
     progressPercent: 10,
     text: `Generating design strategy`,
   });
 
-  /**
-   * Then, we kick off the design strategy generation process. We use pRetry to retry the
-   * operation up to 3 times in case of failure.
-   */
+  // /**
+  //  * Then, we kick off the design strategy generation process. We use pRetry to retry the
+  //  * operation up to 3 times in case of failure.
+  //  */
   const designStrategy = await pRetry(
     () =>
       createDesignStrategy({
@@ -150,11 +144,12 @@ const logoDesign: Handler<SQSEvent, string> = async (event, context, cb) => {
     });
   });
 
-  // Update the submission progress as the logo designs are created
+  // // Update the submission progress as the logo designs are created
   let submissionProgress = 0;
   queue.on("completed", async (submissionFile) => {
     submissionProgress += 10;
-    await artilla.submissions.progress(submission.id, {
+
+    await artilla.submissions.setProgress(submission.id, {
       progressPercent: submissionProgress,
       text: `Created ${submissionFile.key}`,
     });

@@ -52,13 +52,13 @@ export function Agent({ stack }: StackContext) {
   /**
    * The webhook processing function
    * This function processes incoming webhook requests from Artilla and enqueues the accepted task to the processing queue
-   * We bind the jobProcessingQueue to the function so that it can enqueue the accepted task
    * @see src/lambda.webhook
    */
   const webhook = new Function(stack, "webhook", {
     handler: "src/lambda.webhook",
     description: "Handles incoming webhook requests from Artilla",
     url: true,
+    // We bind the jobProcessingQueue to the function so that it can enqueue the accepted task
     bind: [jobProcessingQueue],
   });
 

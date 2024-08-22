@@ -1,0 +1,39 @@
+{
+    "version": "0.2.0",
+    "compounds": [
+        {
+            "name": "Debug",
+            "configurations": [
+                "Launch SST Dev",
+                "Attach SST Dev"
+            ]
+        }
+    ],
+    "configurations": [
+        {
+            "name": "Attach SST Dev",
+            "port": 9229,
+            "request": "attach",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "node"
+        },
+        {
+            "name": "Launch SST Dev",
+            "type": "node",
+            "request": "launch",
+            "runtimeArgs": [
+                "--inspect=127.0.0.1:9229",
+                "${workspaceRoot}/node_modules/sst/cli/sst.js",
+                "dev",
+                "--increase-timeout"
+            ],
+            "console": "integratedTerminal",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "cwd": "${workspaceRoot}"
+        }
+    ]
+}

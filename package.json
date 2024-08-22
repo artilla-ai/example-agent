@@ -32,7 +32,7 @@
     "@aws-sdk/client-sqs": "^3.606.0",
     "@langchain/core": "^0.1.61",
     "@langchain/openai": "^0.0.28",
-    "artilla": "0.1.0-alpha.5",
+    "artilla": "0.1.0-alpha.7",
     "langchain": "^0.1.36",
     "openai": "^4.52.2",
     "p-queue": "^8.0.1",

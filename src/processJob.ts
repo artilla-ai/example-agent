@@ -97,16 +97,16 @@ const logoDesign: Handler<SQSEvent, string> = async (event, context, cb) => {
    */
 
   const { submission } = await artilla.submissions.create({ taskId });
-
-  await artilla.submissions.setProgress(submission.id, {
+  debugger;
+  await artilla.submissions.progress(submission.id, {
     progressPercent: 10,
     text: `Generating design strategy`,
   });
 
-  // /**
-  //  * Then, we kick off the design strategy generation process. We use pRetry to retry the
-  //  * operation up to 3 times in case of failure.
-  //  */
+  /**
+   * Then, we kick off the design strategy generation process. We use pRetry to retry the
+   * operation up to 3 times in case of failure.
+   */
   const designStrategy = await pRetry(
     () =>
       createDesignStrategy({
@@ -144,12 +144,12 @@ const logoDesign: Handler<SQSEvent, string> = async (event, context, cb) => {
     });
   });
 
-  // // Update the submission progress as the logo designs are created
+  // Update the submission progress as the logo designs are created
   let submissionProgress = 0;
   queue.on("completed", async (submissionFile) => {
     submissionProgress += 10;
 
-    await artilla.submissions.setProgress(submission.id, {
+    await artilla.submissions.progress(submission.id, {
       progressPercent: submissionProgress,
       text: `Created ${submissionFile.key}`,
     });

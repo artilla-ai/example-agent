@@ -77,11 +77,5 @@ export function Agent({ stack }: StackContext) {
  * @returns {string} The API endpoint
  */
 function getApiEndpointForStage(stageName: string) {
-  if (stageName === "prod") {
-    return "https://artilla.ai";
-  } else if (stageName === "staging") {
-    return "https://staging.artilla.ai";
-  } else {
-    return "http://localhost:3000";
-  }
+  return "https://artilla.ai";
 }

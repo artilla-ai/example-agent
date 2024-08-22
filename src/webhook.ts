@@ -24,8 +24,6 @@ export const webhook: Handler<LambdaFunctionURLEvent, string> = async (
 
   const eventType = data.eventType;
 
-  console.log(data);
-
   if (eventType === "test") {
     return "success";
   } else if (eventType === "task.created") {
